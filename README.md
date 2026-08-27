@@ -9,6 +9,29 @@ An intelligent, full-stack student copilot designed to solve **information overl
 
 ---
 
+## 🏢 Business Problem & Motivation
+
+University students, researchers, and early-career professionals receive **hundreds of emails weekly** across academic mailing lists, career portals, and department newsletters. This leads to three critical breakdowns:
+
+1. **Information Overload & High Noise Ratio**: High-value career opportunities (internships, scholarships, research grants, hackathons) are buried under campus noise (lost & found, parking advisories, commercial course promotions, event reminders).
+2. **Missed Deadlines & Lost Opportunities**: Time-sensitive announcements (e.g., closing in 48 hours) are easily overlooked in standard chronological inboxes.
+3. **Mismatched Eligibility & Wasted Effort**: Students spend valuable hours manually reviewing long email threads only to find out they don't meet specific eligibility criteria (e.g., CGPA cutoffs, specific majors, graduation year, or missing prerequisites).
+
+### 🎯 What We Are Solving (Core Value Proposition)
+
+Opportunity Inbox Copilot solves the **"Opportunity Discovery & Triage Friction"** by converting an unstructured, noisy email inbox into an **action-oriented, personalized, high-priority feed**.
+
+| Before (The Problem) | After (Opportunity Inbox Copilot) |
+| :--- | :--- |
+| **Unstructured Text**: Scrolling through long, repetitive email bodies. | **Structured Intelligence**: Automated extraction of deadlines, stipends, eligibility criteria, and direct application links. |
+| **Spam & Clutter**: Important scholarships lost in campus announcements. | **Automated Noise Filtering**: Non-opportunity emails are quarantined into a dedicated Noise Bin. |
+| **Chronological Inbox**: Emails sorted by arrival time, not relevance or deadline. | **Deterministic Personalized Ranking**: Scored mathematically based on student profile fit (40%), deadline urgency (35%), and actionable completeness (25%). |
+| **Application Friction**: Manual resume tailoring and drafting. | **Action Checklist & 1-Click Drafting**: Personalized to-dos and tailored AI-drafted cover letters sent directly via SMTP. |
+
+> 💡 **Elevator Pitch:** *"Students miss out on life-changing scholarships and internships because their university inboxes are flooded with campus noise and poorly formatted emails. **Opportunity Inbox Copilot** acts as an intelligent career filter: it reads emails in real-time, extracts key eligibility and deadline criteria, matches them against the student's resume, and produces a mathematically ranked priority feed with 1-click application tools."*
+
+---
+
 ## 🌟 Key Capabilities & Highlights
 
 * 🤖 **Dual-Engine Entity Extraction**: Powered by Google Gemini with a zero-dependency offline heuristic fallback. Extracts opportunity types, deadlines, eligibility criteria, stipends, required documents, and apply links.

@@ -1,0 +1,54 @@
+[
+  {
+    "student_id": "persona_cs_star",
+    "name": "Hamza Tariq (High-Achieving CS Senior)",
+    "degree": "BS Computer Science",
+    "semester": 6,
+    "cgpa": 3.85,
+    "skills": ["Python", "PyTorch", "Machine Learning", "FastAPI", "Docker", "ROS"],
+    "interests": ["Artificial Intelligence", "Robotics & Vision", "Research", "Open Source"],
+    "preferred_types": ["Internship", "Research / Fellowship", "Hackathon / Competition"],
+    "financial_need": false,
+    "location_preference": "Any (Remote or On-site)",
+    "past_experience": "Published research workshop paper on Vision Transformers; built open source AI tools."
+  },
+  {
+    "student_id": "persona_need_based",
+    "name": "Ayesha Khan (Need-Based Sophomore)",
+    "degree": "BS Software Engineering",
+    "semester": 4,
+    "cgpa": 3.40,
+    "skills": ["Python", "JavaScript", "HTML/CSS", "SQL", "Git"],
+    "interests": ["Web Development", "Scholarships", "Software Engineering"],
+    "preferred_types": ["Scholarship", "Internship"],
+    "financial_need": true,
+    "location_preference": "Lahore",
+    "past_experience": "Built university portal projects; seeking financial support and practical web dev internships."
+  },
+  {
+    "student_id": "persona_business",
+    "name": "Bilal Ahmed (BBA Finance Student)",
+    "degree": "Bachelor of Business Administration (BBA)",
+    "semester": 6,
+    "cgpa": 3.65,
+    "skills": ["Financial Modeling", "Business Strategy", "Data Analysis", "Excel", "Presentation"],
+    "interests": ["Management Consulting", "Fintech", "Investment Banking"],
+    "preferred_types": ["Internship", "Workshop / Conference"],
+    "financial_need": false,
+    "location_preference": "Islamabad / MENA",
+    "past_experience": "President of University Finance Club, conducted case analysis for local startups."
+  },
+  {
+    "student_id": "persona_freshman",
+    "name": "Zainab Malik (Curious Freshman)",
+    "degree": "BS Computer Science",
+    "semester": 2,
+    "cgpa": 3.10,
+    "skills": ["C++", "Python Basics", "Problem Solving"],
+    "interests": ["Competitive Programming", "Hackathons", "Mentorship"],
+    "preferred_types": ["Hackathon / Competition", "Workshop / Conference"],
+    "financial_need": false,
+    "location_preference": "Any",
+    "past_experience": "Participated in university coding battles, eager to build first hackathon project."
+  }
+]

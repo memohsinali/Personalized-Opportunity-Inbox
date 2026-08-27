@@ -42,7 +42,14 @@ def load_preset_profiles():
         return json.load(f)
 
 
+@st.cache_data
+def load_sample_emails():
+    with open(DATA_DIR / "sample_emails.json", "r") as f:
+        return json.load(f)
+
+
 preset_profiles = load_preset_profiles()
+sample_benchmark_emails = load_sample_emails()
 
 
 # ==========================================
@@ -260,34 +267,67 @@ with st.sidebar:
         imap_user = st.text_input("Email Address:", placeholder="your.name@gmail.com", key="sb_imap_user")
         imap_pass = st.text_input("App Password (16-char):", type="password", help="Use your 16-letter Google App Password from myaccount.google.com/apppasswords", key="sb_imap_pass")
 
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            fetch_limit = st.number_input("Max Emails:", min_value=1, max_value=50, value=10, key="sb_fetch_limit")
-        with col_f2:
-            unread_only = st.checkbox("Unread only", value=False, key="sb_unread_only")
+        fetch_limit = st.number_input("Max Live Emails:", min_value=1, max_value=50, value=10, key="sb_fetch_limit")
+
+        fetch_strategy = st.radio(
+            "🎯 Ingestion Strategy:",
+            [
+                "⚡ Fetch only live emails (Unread only)",
+                "📥 Fetch latest emails (Recent mailbox)",
+                "🔄 Fetch both latest & live emails",
+            ],
+            index=0,
+            key="sb_fetch_strategy",
+            help="⚡ Live: only unread incoming emails | 📥 Latest: most recent N emails from inbox | 🔄 Both: combine latest inbox with sample benchmark opportunities"
+        )
 
         col_btn1, col_btn2 = st.columns([2, 1])
         with col_btn1:
-            if st.button("📥 Fetch & Rank Live Emails", use_container_width=True, key="sb_btn_fetch"):
+            if st.button("📥 Fetch & Sync Emails", use_container_width=True, key="sb_btn_fetch"):
                 if not imap_user or not imap_pass:
                     st.error("Please provide both your email address and App Password.")
                 else:
-                    with st.spinner(f"Connecting to {imap_host} and retrieving live emails..."):
+                    is_unread_only = "only live" in fetch_strategy.lower()
+                    is_both = "both" in fetch_strategy.lower()
+
+                    with st.spinner(f"Connecting to {imap_host} and retrieving emails..."):
                         success, live_emails, msg = ImapSyncService.fetch_live_emails(
                             imap_host=imap_host,
                             email_address=imap_user,
                             app_password=imap_pass,
                             limit=int(fetch_limit),
-                            unread_only=unread_only,
+                            unread_only=is_unread_only,
                         )
                         if success:
                             st.session_state.connected_email = imap_user.strip()
                             st.session_state.connected_pass = imap_pass.strip()
+
+                            emails_to_add = []
                             if live_emails:
-                                st.session_state.active_emails.extend(live_emails)
-                                new_parsed = EmailParserService.parse_email_batch(live_emails, api_key=user_api_key)
-                                st.session_state.parsed_opportunities.extend(new_parsed)
-                                st.success(f"🎉 {msg}")
+                                emails_to_add.extend(live_emails)
+
+                            if is_both:
+                                # Merge with benchmark sample dataset without duplicate IDs
+                                existing_ids = {e.get("id") for e in emails_to_add}
+                                for sample_e in sample_benchmark_emails:
+                                    if sample_e.get("id") not in existing_ids:
+                                        emails_to_add.append(sample_e)
+
+                            if emails_to_add:
+                                if is_unread_only or not st.session_state.active_emails:
+                                    st.session_state.active_emails = emails_to_add
+                                    new_parsed = EmailParserService.parse_email_batch(emails_to_add, api_key=user_api_key)
+                                    st.session_state.parsed_opportunities = new_parsed
+                                else:
+                                    # Append unique emails
+                                    current_ids = {e.get("id") for e in st.session_state.active_emails}
+                                    fresh_emails = [e for e in emails_to_add if e.get("id") not in current_ids]
+                                    if fresh_emails:
+                                        st.session_state.active_emails.extend(fresh_emails)
+                                        new_parsed = EmailParserService.parse_email_batch(fresh_emails, api_key=user_api_key)
+                                        st.session_state.parsed_opportunities.extend(new_parsed)
+
+                                st.success(f"🎉 {msg} ({len(st.session_state.active_emails)} active emails in inbox)")
                                 st.rerun()
                             else:
                                 st.info(msg)
@@ -298,6 +338,12 @@ with st.sidebar:
                 st.session_state.active_emails = []
                 st.session_state.parsed_opportunities = []
                 st.rerun()
+
+        if st.button("📦 Load Sample Benchmark Emails", use_container_width=True, key="sb_btn_sample"):
+            st.session_state.active_emails = list(sample_benchmark_emails)
+            st.session_state.parsed_opportunities = EmailParserService.parse_email_batch(sample_benchmark_emails, api_key=user_api_key)
+            st.success(f"Loaded {len(sample_benchmark_emails)} benchmark opportunity emails!")
+            st.rerun()
 
         st.markdown("---")
         st.markdown("### ⚡ Live Auto-Watcher")
@@ -695,14 +741,24 @@ with tab_ranked:
 
     if not all_parsed:
         st.markdown("""
-        <div style="background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.35); border-radius: 16px; padding: 36px 24px; text-align: center; margin: 24px 0;">
-            <div style="font-size: 36px; margin-bottom: 10px;">📬</div>
-            <h3 style="color: #FFFFFF; margin: 0 0 8px 0;">Live Mailbox Mode Active</h3>
-            <p style="color: #94A3B8; font-size: 14px; max-width: 580px; margin: 0 auto 16px auto; line-height: 1.6;">
-                Your Opportunity Inbox is clean and ready. Open <b>📧 Live Mailbox Sync</b> in the left sidebar (or Tab 6) to connect your <b>Gmail</b> or <b>University Mailbox</b> and pull real-time opportunities.
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.35); border-radius: 16px; padding: 32px 24px; text-align: center; margin: 20px 0;">
+            <div style="font-size: 38px; margin-bottom: 10px;">📬</div>
+            <h3 style="color: #FFFFFF; margin: 0 0 8px 0;">Opportunity Inbox is Ready</h3>
+            <p style="color: #94A3B8; font-size: 14px; max-width: 620px; margin: 0 auto 20px auto; line-height: 1.6;">
+                Choose how you want to populate your opportunity feed: connect your live mailbox or load the benchmark dataset to test scoring & ranking.
             </p>
         </div>
         """, unsafe_allow_html=True)
+
+        col_q1, col_q2 = st.columns(2)
+        with col_q1:
+            if st.button("📦 Load Sample Benchmark Dataset (10 Emails)", use_container_width=True, key="feed_load_sample"):
+                st.session_state.active_emails = list(sample_benchmark_emails)
+                st.session_state.parsed_opportunities = EmailParserService.parse_email_batch(sample_benchmark_emails, api_key=user_api_key)
+                st.success(f"Loaded {len(sample_benchmark_emails)} benchmark opportunity emails!")
+                st.rerun()
+        with col_q2:
+            st.info("💡 To fetch **Live Emails**, enter your email & App Password in the left sidebar under **📧 Live Mailbox Sync** and choose your preferred ingestion strategy.")
     elif display_items:
         for item in display_items:
             is_exp = (item.scoring.urgency_score < 0) or (item.opportunity.days_until_deadline is not None and item.opportunity.days_until_deadline < 0)
@@ -826,30 +882,65 @@ with tab_ingest:
         with c_pass:
             t_imap_pass = st.text_input("Google App Password (16 Letters):", type="password", help="Create at myaccount.google.com/apppasswords", key="tab_imap_pass")
 
-        c_lim, c_unr = st.columns([1, 1])
+        c_lim, c_strat = st.columns([1, 2])
         with c_lim:
-            t_limit = st.slider("Number of recent emails to scan:", min_value=1, max_value=30, value=10, key="tab_limit")
-        with c_unr:
-            t_unread = st.checkbox("Fetch unread emails only", value=False, key="tab_unread")
+            t_limit = st.slider("Number of emails to scan:", min_value=1, max_value=50, value=10, key="tab_limit")
+        with c_strat:
+            tab_fetch_strategy = st.radio(
+                "🎯 Ingestion Strategy:",
+                [
+                    "⚡ Fetch only live emails (Unread only)",
+                    "📥 Fetch latest emails (Recent mailbox)",
+                    "🔄 Fetch both latest & live emails",
+                ],
+                index=0,
+                key="tab_fetch_strategy",
+                help="⚡ Live: only unread incoming emails | 📥 Latest: most recent N emails from inbox | 🔄 Both: combine latest inbox with benchmark opportunities"
+            )
 
-        if st.button("🚀 Connect & Fetch Live Emails from Inbox", use_container_width=True, key="tab_btn_fetch"):
+        if st.button("🚀 Connect & Sync Emails from Inbox", use_container_width=True, key="tab_btn_fetch"):
             if not t_imap_user or not t_imap_pass:
                 st.error("Please enter your email and App Password.")
             else:
+                t_unread_only = "only live" in tab_fetch_strategy.lower()
+                t_is_both = "both" in tab_fetch_strategy.lower()
+
                 with st.spinner(f"Connecting to {t_imap_host} via IMAP SSL..."):
                     t_success, t_live_emails, t_msg = ImapSyncService.fetch_live_emails(
                         imap_host=t_imap_host,
                         email_address=t_imap_user,
                         app_password=t_imap_pass,
                         limit=int(t_limit),
-                        unread_only=t_unread,
+                        unread_only=t_unread_only,
                     )
                     if t_success:
+                        st.session_state.connected_email = t_imap_user.strip()
+                        st.session_state.connected_pass = t_imap_pass.strip()
+
+                        emails_to_add = []
                         if t_live_emails:
-                            st.session_state.active_emails.extend(t_live_emails)
-                            t_parsed = EmailParserService.parse_email_batch(t_live_emails, api_key=user_api_key)
-                            st.session_state.parsed_opportunities.extend(t_parsed)
-                            st.success(f"🎉 {t_msg}")
+                            emails_to_add.extend(t_live_emails)
+
+                        if t_is_both:
+                            existing_ids = {e.get("id") for e in emails_to_add}
+                            for sample_e in sample_benchmark_emails:
+                                if sample_e.get("id") not in existing_ids:
+                                    emails_to_add.append(sample_e)
+
+                        if emails_to_add:
+                            if t_unread_only or not st.session_state.active_emails:
+                                st.session_state.active_emails = emails_to_add
+                                t_parsed = EmailParserService.parse_email_batch(emails_to_add, api_key=user_api_key)
+                                st.session_state.parsed_opportunities = t_parsed
+                            else:
+                                current_ids = {e.get("id") for e in st.session_state.active_emails}
+                                fresh_emails = [e for e in emails_to_add if e.get("id") not in current_ids]
+                                if fresh_emails:
+                                    st.session_state.active_emails.extend(fresh_emails)
+                                    t_parsed = EmailParserService.parse_email_batch(fresh_emails, api_key=user_api_key)
+                                    st.session_state.parsed_opportunities.extend(t_parsed)
+
+                            st.success(f"🎉 {t_msg} ({len(st.session_state.active_emails)} active emails in inbox)")
                             st.rerun()
                         else:
                             st.info(t_msg)
